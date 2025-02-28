@@ -2,6 +2,9 @@
 
 This is a React-based task management system that allows users to create, update, and delete tasks. Tasks can be categorized into three sections: **To-Do**, **In Progress**, and **Done**. The system also supports drag-and-drop functionality to move tasks between categories.
 
+## Live Demo  
+🔗 **Live Project:** [TaskFlow](https://task-management-42632.web.app/) 
+
 ## Features
 
 - **Task Creation**: Add new tasks with a title and description.
@@ -39,9 +42,6 @@ This is a React-based task management system that allows users to create, update
    npm start
    ```
 
-5. **Open the application**:
-   - Visit `http://localhost:3000` in your browser to view the task management system.
-
 ## Usage
 
 ### Adding a Task
@@ -60,10 +60,6 @@ This is a React-based task management system that allows users to create, update
 
 ## Code Structure
 
-- **`TaskPage.js`**: The main component that renders the task management interface.
-  - Uses `useQuery` to fetch tasks from the backend.
-  - Implements drag-and-drop functionality using `@hello-pangea/dnd`.
-  - Handles task creation, deletion, and updates.
 
 ## Dependencies
 
@@ -71,26 +67,3 @@ This is a React-based task management system that allows users to create, update
 - `react-query`: ^4.0.0
 - `axios`: ^1.0.0
 - `@hello-pangea/dnd`: ^16.0.0
-
-## Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository.
-2. Create a new branch for your feature or bugfix.
-3. Commit your changes and push to the branch.
-4. Submit a pull request.
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- Thanks to the creators of React, React Query, and @hello-pangea/dnd for their amazing libraries.
-- Special thanks to the open-source community for their contributions and support.
-
----
-
-Feel free to customize this README file to better suit your project's needs!
-```
