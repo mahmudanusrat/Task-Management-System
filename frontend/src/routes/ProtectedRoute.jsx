@@ -12,8 +12,10 @@ const ProtectedRoute = ({ children }) => {
         <span className="loading loading-spinner loading-lg"></span>
       </div>
     );
-  if (user) return children;
-  return <Navigate to="/login" state={{ from: location }} replace="true" />;
+  if (user && user?.email) {
+    return children;
+  }
+  return <Navigate to="/login" state={location.pathname } />;
 };
 
 ProtectedRoute.propTypes = {

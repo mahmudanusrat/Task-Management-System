@@ -1,33 +1,25 @@
-
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
 
 const Login = () => {
   const { signInWithGoogle, user } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation()
 
-  const from = location.state?.from?.pathname || "/";
-
-  if (user) return <Navigate to={from} replace={true} />;
-
-  const handleGoogleLogin = async () => {
-    try {
-      const result = await signInWithGoogle();
-      console.log("User Signed In:", result.user);
-        navigate("/tasks");
-    } catch (error) {
-      console.error("Google Sign-In Error:", error);
-    }
+  const handleGoogleLogin = () => {
+    signInWithGoogle();
   };
 
+  if (user) {
+    return <Navigate to="/" />;
+  }
+  
+
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-100">
-      <div className=" p-8 rounded-lg shadow-lg text-center">
-        <h2 className="text-2xl font-semibold mb-4">Login to Task Manager</h2>
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4">
+      <div className="p-10 bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl shadow-lg text-center border border-white/20">
+        <h2 className="text-3xl font-bold mb-6 text-black">Login to Task Manager</h2>
         <button
           onClick={handleGoogleLogin}
-          className="bg-blue-500 text-white px-6 py-2 rounded-lg shadow-md hover:bg-blue-600 transition"
+          className="bg-blue-500 text-white px-8 py-3 rounded-lg shadow-md hover:bg-blue-600 transition duration-300 text-lg font-semibold"
         >
           Sign in with Google
         </button>

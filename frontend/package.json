@@ -11,15 +11,22 @@
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
+    "@material-tailwind/react": "^2.1.10",
     "@tailwindcss/vite": "^4.0.7",
+    "@tanstack/react-query": "^5.66.9",
     "axios": "^1.7.9",
+    "clsx": "^2.1.1",
+    "dateformat": "^5.0.3",
     "firebase": "^11.3.1",
     "lucide-react": "^0.475.0",
     "prop-types": "^15.8.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-hot-toast": "^2.5.2",
+    "react-icons": "^5.5.0",
     "react-router": "^7.2.0",
     "react-router-dom": "^7.2.0",
+    "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.0.7"
   },
   "devDependencies": {

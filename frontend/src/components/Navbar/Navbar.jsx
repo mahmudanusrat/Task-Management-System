@@ -15,6 +15,7 @@ const Navbar = () => {
       <div className="hidden md:flex space-x-6 items-center">
         <NavLink to="/" className="hover:text-gray-400">Home</NavLink>
         <NavLink to="/tasks" className="hover:text-gray-400">Tasks</NavLink>
+        <NavLink to="/add-task" className="hover:text-gray-400">Add Task</NavLink>
 
         {user ? (
           <div className="flex items-center space-x-4">

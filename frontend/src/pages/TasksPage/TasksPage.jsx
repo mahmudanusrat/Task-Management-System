@@ -1,171 +1,243 @@
-import { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import useAxiosSecure from "../../hooks/useAxiosSecure";
+import React, { useEffect, useState } from "react";
+import { Dialog, DialogHeader } from "@material-tailwind/react";
+import axios from "axios";
+import { CiMenuKebab } from "react-icons/ci";
+import {
+  Menu,
+  MenuHandler,
+  MenuList,
+  MenuItem,
+} from "@material-tailwind/react";
+import { MdDeleteOutline } from "react-icons/md";
+import { GrFormEdit } from "react-icons/gr";
+import toast from "react-hot-toast";
+import useTasks from "../../hooks/useTasks";
 
-const TaskPage = () => {
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [newTask, setNewTask] = useState({ title: "", description: "" });
-  const axiosSecure = useAxiosSecure();
+const Tasks = () => {
+  const { tasks, setTasks, refetch, isLoading } = useTasks();
+  const apiUrl = import.meta.env.VITE_API_URL;
+  const reorder = (list, startIndex, endIndex) => {
+    const result = Array.from(list);
+    const [removed] = result.splice(startIndex, 1);
+    result.splice(endIndex, 0, removed);
+    return result;
+  };
+  const handleDeleteTaks = async (id) => {
+    axios.delete(`${apiUrl}/tasks/${id}`).then(() => {
+      toast.success("Task Deleted");
+      refetch();
+    });
+  };
+  const [open, setOpen] = React.useState(false);
 
-  // Fetch tasks function
-  const fetchTasks = async () => {
-    try {
-      const response = await axiosSecure.get(`/tasks`);
-      setTasks(response.data);
-    } catch (error) {
-      console.error("Error fetching tasks:", error);
-    } finally {
-      setLoading(false);
+  const handleOpen = () => {
+    setOpen(!open);
+    if (open) {
+      setUpdateTaskD({});
+      setUpdateTaskId("");
     }
   };
+  const [updateTaskId, setUpdateTaskId] = useState("");
+  const [updateTaskD, setUpdateTaskD] = useState({});
 
-  // Fetch tasks on component mount
   useEffect(() => {
-    fetchTasks();
-  }, []);
+    if (updateTaskId && open) {
+      axios.get(`${apiUrl}/task/${updateTaskId}`).then((res) => {
+        setUpdateTaskD(res.data);
+      });
+    }
+  }, [updateTaskId, apiUrl, open]);
 
-  // Handle drag-and-drop
+  const handleUpdate = (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const title = form.title.value;
+    const description = form.description.value;
+
+    axios
+      .put(`${apiUrl}/tasks/update/${updateTaskD?._id}`, { title, description })
+      .then(() => {
+        refetch();
+      });
+    handleOpen();
+  };
+
   const onDragEnd = async (result) => {
     const { source, destination } = result;
-
-    // If dropped outside a droppable area, do nothing
     if (!destination) return;
 
-    console.log("Source:", source);
-    console.log("Destination:", destination);
+    const sourceColumn = source.droppableId;
+    const destinationColumn = destination.droppableId;
 
-    // Create a copy of the tasks array
-    const updatedTasks = [...tasks];
+    if (sourceColumn === destinationColumn) {
+      const items = reorder(
+        [...tasks[sourceColumn]],
+        source.index,
+        destination.index
+      );
+      items.forEach((item, index) => (item.order = index));
 
-    // Remove the task from the source index
-    const [movedTask] = updatedTasks.splice(source.index, 1);
+      const updatedTasks = {
+        ...tasks,
+        [sourceColumn]: items.sort((a, b) => a.order - b.order),
+      };
 
-    // Update the task's category to the destination droppableId
-    movedTask.category = destination.droppableId;
+      setTasks(updatedTasks);
 
-    // Insert the task at the destination index
-    updatedTasks.splice(destination.index, 0, movedTask);
-
-    // Update the state with the new tasks array
-    setTasks(updatedTasks);
-
-    try {
-      // Send a PUT request to update the task's category in the backend
-      await axiosSecure.put(`/tasks/${movedTask._id}`, {
-        title: movedTask.title,
-        description: movedTask.description,
-        category: movedTask.category,
+      await axios.put(`${apiUrl}/tasks/reorder`, {
+        tasks: items.map(({ _id, order }) => ({ _id, order })),
       });
-      console.log("Task category updated successfully!");
-    } catch (error) {
-      console.error("Error updating task category:", error);
-    }
-  };
+    } else {
+      const sourceItems = [...tasks[sourceColumn]];
+      const destinationItems = [...tasks[destinationColumn]];
 
-  // Add task and refresh list
-  const addTask = async () => {
-    if (!newTask.title.trim()) return;
+      const [movedItem] = sourceItems.splice(source.index, 1);
+      destinationItems.splice(destination.index, 0, movedItem);
 
-    try {
-      await axiosSecure.post(`/tasks`, {
-        title: newTask.title,
-        description: newTask.description,
-        category: "To-Do", // Default category for new tasks
+      sourceItems.forEach((item, index) => (item.order = index));
+      destinationItems.forEach((item, index) => (item.order = index));
+
+      const updatedTasks = {
+        ...tasks,
+        [sourceColumn]: sourceItems.sort((a, b) => a.order - b.order),
+        [destinationColumn]: destinationItems.sort((a, b) => a.order - b.order),
+      };
+
+      setTasks(updatedTasks);
+
+      await axios.put(`${apiUrl}/tasks/drag/${movedItem._id}`, {
+        category: destinationColumn,
+        order: destination.index,
       });
-
-      // Clear input fields
-      setNewTask({ title: "", description: "" });
-
-      // Fetch updated tasks list
-      fetchTasks();
-    } catch (error) {
-      console.error("Error adding task:", error);
     }
   };
-
-  // Delete task
-  const deleteTask = async (taskId) => {
-    try {
-      await axiosSecure.delete(`/tasks/${taskId}`);
-      fetchTasks(); // Refresh task list after deletion
-    } catch (error) {
-      console.error("Error deleting task:", error);
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className=" w-full  h-full flex justify-center items-center">
+        <h1 className=" text-xl flex items-center gap-2">
+          <span className=" spinning" />
+        </h1>
+      </div>
+    );
+  }
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="flex gap-4 p-4">
-        {["To-Do", "In Progress", "Done"].map((category) => (
-          <Droppable droppableId={category} key={category}>
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 md:gap-3 xl:gap-4 gap-2 h-full pt-10">
+        {Object.entries(tasks).map(([column, items]) => (
+          <Droppable key={column} droppableId={column}>
             {(provided) => (
               <div
-                className="w-1/3 bg-base-200 p-4 rounded-lg shadow-lg"
                 ref={provided.innerRef}
                 {...provided.droppableProps}
+                className="bg-gray-600 rounded p-2 xl:p-4 overflow-x-hidden border-2 min-h-full space-y-2 overflow-y-auto"
               >
-                <h2 className="text-2xl font-semibold text-center text-gray-700">
-                  {category}
+                <h2 className="text-lg font-bold mb-4 capitalize flex theme-border-b pb-3 items-center gap-1">
+                  {column === "todo"
+                    ? "To Do"
+                    : column === "inProgress"
+                    ? "In Progress"
+                    : "Done"}
                 </h2>
-
-                {/* Task List */}
-                <div>
-                  {tasks
-                    .filter((task) => task.category === category)
-                    .map((task, index) => (
-                      <Draggable key={task._id} draggableId={task._id} index={index}>
-                        {(provided) => (
-                          <div
-                            className="task bg-white p-4 mb-3 rounded-md shadow-md hover:bg-base-100 transition"
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                          >
-                            <h3 className="font-semibold text-lg text-black">{task.title}</h3>
-                            <p className="text-sm text-gray-600">{task.description}</p>
-                            <button
-                              onClick={() => deleteTask(task._id)}
-                              className="btn btn-sm btn-danger mt-2"
-                            >
-                              Delete
-                            </button>
+                {items?.map((item, index) => (
+                  <Draggable
+                    key={item._id}
+                    draggableId={item._id}
+                    index={index}
+                  >
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        className="cursor-default"
+                      >
+                        <div className="cursor-default py-3 bg-gray-700 px-2 rounded-t w-full justify-between flex items-center">
+                          <div className="flex-1">
+                            <p className="text-white px-3">{item.title}</p>
                           </div>
-                        )}
-                      </Draggable>
-                    ))}
-                  {provided.placeholder}
-                </div>
+                          <Menu>
+                            <MenuHandler>
+                              <div>
+                                <p className="text-white px-3 cursor-pointer">
+                                  <CiMenuKebab />
+                                </p>
+                              </div>
+                            </MenuHandler>
+                            <MenuList className="bg-gray-700 px-0 w-fit">
+                              <MenuItem
+                                onClick={() => {
+                                  handleOpen();
+                                  setUpdateTaskId(item._id);
+                                }}
+                                className="hover:bg-black/20 rounded-none flex gap-1 items-center cursor-pointer"
+                              >
+                                <GrFormEdit /> Edit
+                              </MenuItem>
+                              <MenuItem
+                                onClick={() => handleDeleteTaks(item._id)}
+                                className="hover:bg-black/20 rounded-none flex gap-1 items-center cursor-pointer"
+                              >
+                                <MdDeleteOutline /> Delete
+                              </MenuItem>
+                            </MenuList>
+                          </Menu>
+                        </div>
 
-                {/* Add Task Form - Only in "To-Do" Section */}
-                {category === "To-Do" && (
-                  <div className="mt-4 p-2 bg-gray-100 rounded-md">
-                    <input
-                      type="text"
-                      placeholder="Task Title"
-                      className="input input-bordered w-full mb-2"
-                      value={newTask.title}
-                      onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Task Description"
-                      className="input input-bordered w-full mb-2"
-                      value={newTask.description}
-                      onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                    />
-                    <button onClick={addTask} className="btn btn-primary w-full">
-                      Add Task
-                    </button>
-                  </div>
-                )}
+                        <div className="p-3 theme-border rounded shadow-sm cursor-grab theme-bg shadow-background-dark/30 theme-card-bg relative">
+                          <p className="text-xs lg:text-sm">
+                            {item.description}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
               </div>
             )}
           </Droppable>
         ))}
+        <div>
+          <Dialog
+            size="xs"
+            open={open}
+            handler={handleOpen}
+            className=" p-4 text-black"
+          >
+            <DialogHeader className=" text-center mx-auto w-fit text-black">
+              Update task
+            </DialogHeader>
+            <form
+              onSubmit={handleUpdate}
+              action=""
+              className={` space-y-4 duration-200 `}
+            >
+              <input
+                defaultValue={updateTaskD?.title}
+                name="title"
+                className=" w-full py-2 px-3 border color-text  rounded"
+                placeholder=" Enter task title"
+                type="text"
+              />
+              <textarea
+                defaultValue={updateTaskD?.description}
+                placeholder="Descroption"
+                name="description"
+                className=" w-full resize-none py-2 px-3 border color-text rounded "
+                id=""
+              ></textarea>
+              <div className=" flex items-center justify-between">
+                <button className="  btn  ">Update Task</button>
+                <button className="btn">Cancel</button>
+              </div>
+            </form>
+          </Dialog>
+        </div>
       </div>
     </DragDropContext>
   );
 };
 
-export default TaskPage;
+export default Tasks;
